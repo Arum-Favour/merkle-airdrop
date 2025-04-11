@@ -5,6 +5,7 @@ pragma solidity ^0.8.24;
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract MerkleAirdrop is EIP712 {
     using SafeERC20 for IERC20;
@@ -81,27 +82,22 @@ contract MerkleAirdrop is EIP712 {
             );
     }
 
-    function getMessage(
-        address account,
-        uint256 amount
-    ) public view returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        keccak256("Airdrop(address account,uint256 amount)"),
-                        account,
-                        amount
-                    )
-                )
-            );
-    }
-
     function getMerkleRoot() external view returns (bytes32) {
         return i_merkleRoot;
     }
 
     function getAirdropToken() external view returns (IERC20) {
         return i_airdropToken;
+    }
+
+    function _isValidSignature(
+        address account,
+        bytes32 digest,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (bool) {
+        (address actualSigner, , ) = ECDSA.tryRecover(digest, v, r, s);
+        return actualSigner == account;
     }
 }
